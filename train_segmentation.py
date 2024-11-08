@@ -18,8 +18,8 @@ from multiprocessing import Pool
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 class LitUnsupervisedSegmenter(pl.LightningModule):
-    def __init__(self, n_classes, cfg):
-        super().__init__()
+    def _init_(self, n_classes, cfg):
+        super()._init_()
         self.cfg = cfg
         self.n_classes = n_classes
 
@@ -99,10 +99,18 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
 
         return loss
 
+    # def configure_optimizers(self):
+    #     optimizer = torch.optim.Adam([{'params': list(self.projection.parameters()), 'lr': self.cfg.lr1},
+    #                                   {'params': list(self.prediction.parameters()), 'lr': self.cfg.lr2}])
+    #     return optimizer
+
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam([{'params': list(self.projection.parameters()), 'lr': self.cfg.lr1},
-                                      {'params': list(self.prediction.parameters()), 'lr': self.cfg.lr2}])
-        return optimizer
+        optimizer = torch.optim.Adam([
+            {'params': list(self.projection.parameters()), 'lr': self.cfg.lr1, 'weight_decay': 1e-5},
+            {'params': list(self.prediction.parameters()), 'lr': self.cfg.lr2, 'weight_decay': 1e-5}
+        ])
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+        return [optimizer], [scheduler]
 
     def on_train_start(self):
         tb_metrics = {
@@ -177,17 +185,16 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
                 print(k, ': ', v)
             self.log_dict(tb_metrics, sync_dist=True)
 
-
 @hydra.main(config_path="configs", config_name="train_config.yaml", version_base='1.1')
 def my_app(cfg: DictConfig) -> None:
     OmegaConf.set_struct(cfg, False)
     print(OmegaConf.to_yaml(cfg))
     data_dir = cfg.data_dir
-    log_dir = join(cfg.output_root, "loggs")
-    checkpoint_dir = join(cfg.output_root, "checkpts")
+    log_dir = join(cfg.output_root, "logs")
+    checkpoint_dir = join(cfg.output_root, "checkpoints")
 
     prefix = "{}/{}_{}".format(cfg.log_dir, cfg.dataset_name, cfg.experiment_name)
-    name = '{}_date_{}'.format(prefix, datetime.now().strftime('%b%d_%H-%M-%S'))
+    name = '{}date{}'.format(prefix, datetime.now().strftime('%b%d_%H-%M-%S'))
     cfg.full_name = cfg.output_root
 
     os.makedirs(log_dir, exist_ok=True)
@@ -283,7 +290,7 @@ def my_app(cfg: DictConfig) -> None:
     trainer.test(model, test_loader, ckpt_path="best")
 
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     mp.set_start_method('spawn')
     prep_args()
     my_app()
