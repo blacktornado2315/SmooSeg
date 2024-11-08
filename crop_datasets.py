@@ -16,9 +16,9 @@ def _random_crops(img, size, seed, n):
     If the image is torch Tensor, it is expected
     to have [..., H, W] shape, where ... means an arbitrary number of leading dimensions
 
-    .. Note::
+    .. Note:: 
         This transform returns a tuple of images and there may be a
-        mismatch in the number of inputs and targets your ``Dataset`` returns.
+        mismatch in the number of inputs and targets your `Dataset` returns.
 
     Args:
         img (PIL Image or Tensor): Image to be cropped.
@@ -73,20 +73,28 @@ class RandomCropComputer(Dataset):
     def five_crops(self, i, img):
         return five_crop(img, self._get_size(img))
 
-    def __init__(self, cfg, dataset_name, img_set, crop_type, crop_ratio):
+    def _init_(self, cfg, dataset_name, img_set, crop_type, crop_ratio):
         self.data_dir = cfg.data_dir
         self.crop_ratio = crop_ratio
+
+        # Update save_dir to point to a writable location
         self.save_dir = join(
-            cfg.data_dir, "cropped", "{}_{}_crop_{}".format(dataset_name, crop_type, crop_ratio))
+            "/kaggle/working", "cropped", "{}{}_crop{}".format(dataset_name, crop_type, crop_ratio)
+        )
+        
         self.img_set = img_set
         self.dataset_name = dataset_name
         self.cfg = cfg
 
+        # Set image and label directories to writable location
         self.img_dir = join(self.save_dir, "img", img_set)
         self.label_dir = join(self.save_dir, "label", img_set)
+
+        # Create directories at the writable location
         os.makedirs(self.img_dir, exist_ok=True)
         os.makedirs(self.label_dir, exist_ok=True)
 
+        # Cropper based on crop type
         if crop_type == "random":
             cropper = lambda i, x: self.random_crops(i, x)
         elif crop_type == "five":
@@ -94,6 +102,7 @@ class RandomCropComputer(Dataset):
         else:
             raise ValueError('Unknown crop type {}'.format(crop_type))
 
+        # Dataset loading with transformations
         self.dataset = ContrastiveSegDataset(
             cfg.data_dir,
             dataset_name,
@@ -106,7 +115,7 @@ class RandomCropComputer(Dataset):
             extra_transform=cropper
         )
 
-    def __getitem__(self, item):
+    def _getitem_(self, item):
         batch = self.dataset[item]
         imgs = batch['img']
         labels = batch['label']
@@ -118,7 +127,7 @@ class RandomCropComputer(Dataset):
             Image.fromarray(label_arr).save(join(self.label_dir, "{}.png".format(img_num)), 'PNG')
         return True
 
-    def __len__(self):
+    def _len_(self):
         return len(self.dataset)
 
 
@@ -142,6 +151,6 @@ def my_app(cfg: DictConfig) -> None:
                         pass
 
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     prep_args()
     my_app()
