@@ -184,7 +184,7 @@ class LitUnsupervisedSegmenter(pl.LightningModule):
             for k, v in tb_metrics.items():
                 print(k, ': ', v)
             self.log_dict(tb_metrics, sync_dist=True)
-
+            
 @hydra.main(config_path="configs", config_name="train_config.yaml", version_base='1.1')
 def my_app(cfg: DictConfig) -> None:
     OmegaConf.set_struct(cfg, False)
@@ -194,7 +194,7 @@ def my_app(cfg: DictConfig) -> None:
     checkpoint_dir = join(cfg.output_root, "checkpoints")
 
     prefix = "{}/{}_{}".format(cfg.log_dir, cfg.dataset_name, cfg.experiment_name)
-    name = '{}date{}'.format(prefix, datetime.now().strftime('%b%d_%H-%M-%S'))
+    name = '{}_date_{}'.format(prefix, datetime.now().strftime('%b%d_%H-%M-%S'))
     cfg.full_name = cfg.output_root
 
     os.makedirs(log_dir, exist_ok=True)
