@@ -18,8 +18,8 @@ from multiprocessing import Pool
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 class LitUnsupervisedSegmenter(pl.LightningModule):
-    def _init_(self, n_classes, cfg):
-        super()._init_()
+    def __init__(self, n_classes, cfg):
+        super().__init__()
         self.cfg = cfg
         self.n_classes = n_classes
 
@@ -290,7 +290,7 @@ def my_app(cfg: DictConfig) -> None:
     trainer.test(model, test_loader, ckpt_path="best")
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     mp.set_start_method('spawn')
     prep_args()
     my_app()
