@@ -18,7 +18,7 @@ def _random_crops(img, size, seed, n):
 
     .. Note:: 
         This transform returns a tuple of images and there may be a
-        mismatch in the number of inputs and targets your `Dataset` returns.
+        mismatch in the number of inputs and targets your ``Dataset`` returns.
 
     Args:
         img (PIL Image or Tensor): Image to be cropped.
@@ -79,7 +79,7 @@ class RandomCropComputer(Dataset):
 
         # Update save_dir to point to a writable location
         self.save_dir = join(
-            "/kaggle/working", "cropped", "{}{}_crop{}".format(dataset_name, crop_type, crop_ratio)
+            "/kaggle/working", "cropped", "{}_{}_crop_{}".format(dataset_name, crop_type, crop_ratio)
         )
         
         self.img_set = img_set
@@ -115,7 +115,7 @@ class RandomCropComputer(Dataset):
             extra_transform=cropper
         )
 
-    def _getitem_(self, item):
+    def __getitem__(self, item):
         batch = self.dataset[item]
         imgs = batch['img']
         labels = batch['label']
@@ -127,7 +127,7 @@ class RandomCropComputer(Dataset):
             Image.fromarray(label_arr).save(join(self.label_dir, "{}.png".format(img_num)), 'PNG')
         return True
 
-    def _len_(self):
+    def __len__(self):
         return len(self.dataset)
 
 
