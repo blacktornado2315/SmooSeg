@@ -1,5 +1,5 @@
 output_root: '../'
-data_dir: '/content/drive/MyDrive/'
+data_dir: '/kaggle/input/'
 experiment_name: "validation"
 res: 320
 batch_size: 32
@@ -14,7 +14,7 @@ use_ddp: False
  # - "checkpoints/cityscapes_dino_small.ckpt"
 #   - "checkpoints/potsdam_dino_vit_base.ckpt"
 model_paths:
-  - "/content/drive/MyDrive/potsdam_dino_vit_base.ckpt"
+  - "/kaggle/input/potsdam_dino_vit_base.ckpt"
 
 hydra:
   run:
