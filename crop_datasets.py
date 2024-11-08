@@ -73,7 +73,7 @@ class RandomCropComputer(Dataset):
     def five_crops(self, i, img):
         return five_crop(img, self._get_size(img))
 
-    def _init_(self, cfg, dataset_name, img_set, crop_type, crop_ratio):
+    def __init__(self, cfg, dataset_name, img_set, crop_type, crop_ratio):
         self.data_dir = cfg.data_dir
         self.crop_ratio = crop_ratio
 
@@ -151,6 +151,6 @@ def my_app(cfg: DictConfig) -> None:
                         pass
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     prep_args()
     my_app()
