@@ -10,7 +10,7 @@ class DinoFeaturizer(nn.Module):
         self.cfg = cfg
         self.dim = dim
         patch_size = self.cfg.dino_patch_size
-        self.patch_size = patch_size
+        self.patch_size = 8
         self.feat_type = self.cfg.dino_feat_type
         arch = self.cfg.model_type
         self.model = vits.__dict__[arch](patch_size=patch_size, num_classes=0)
@@ -117,9 +117,10 @@ class Projection(nn.Module):
     def make_nonlinear_clusterer(self, in_channels):
         return torch.nn.Sequential(
             torch.nn.Conv2d(in_channels, in_channels, (1, 1)),
+            torch.nn.BatchNorm2d(in_channels),
             torch.nn.SiLU(),
-            torch.nn.Conv2d(in_channels, self.dim, (1, 1)))
-
+            torch.nn.Conv2d(in_channels, self.dim, (1, 1)),
+            torch.nn.BatchNorm2d(self.dim))
 
     def forward(self, feat):
         if self.proj_type is not None:
