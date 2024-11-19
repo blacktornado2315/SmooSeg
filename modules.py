@@ -111,8 +111,9 @@ class Projection(nn.Module):
 
     def make_clusterer(self, in_channels):
         return torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels, self.dim, (1, 1))
-        )
+            torch.nn.Conv2d(in_channels, self.dim, (1, 1)),
+            torch.nn.BatchNorm2d(self.dim))
+        
 
     def make_nonlinear_clusterer(self, in_channels):
         return torch.nn.Sequential(
