@@ -7,7 +7,7 @@ azureml_logging: True
 
 # Loader params
 num_workers: 2
-max_steps: 3024            # 3000 8000   no . of training steps
+max_steps: 3000            # 3000 8000   no . of training steps
 batch_size: 32
 
 dataset_name: "potsdam"  # Updated to potsdam
