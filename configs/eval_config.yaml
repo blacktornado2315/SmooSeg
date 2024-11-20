@@ -1,4 +1,4 @@
-output_root: '../'
+output_root: '/kaggle/working/output/'
 data_dir: '/kaggle/input/'
 experiment_name: "validation"
 res: 320
