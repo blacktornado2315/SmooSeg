@@ -6,7 +6,7 @@ checkpoint_dir: "checkpts"
 azureml_logging: True
 
 # Loader params
-num_workers: 2
+num_workers: 4
 max_steps: 3000            # 3000 8000   no . of training steps
 batch_size: 32
 
