@@ -137,82 +137,48 @@ class Projection(nn.Module):
         else:
             return feat, code
 
+
 class Prediction(nn.Module):
+
     def __init__(self, cfg, n_classes: int, sigma=False):
         super(Prediction, self).__init__()
         self.n_classes = n_classes
         self.dim = cfg.dim
-        
-        # Initialize local clusters for four students
-        self.local_clusters_1 = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
-        self.local_clusters_2 = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
-        self.local_clusters_3 = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
-        self.local_clusters_4 = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
-        
+        # self.local_clusters = nn.init.kaiming_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
+        # self.local_clusters = nn.init.orthogonal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
+        self.local_clusters = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
         self.init_global_clusters()
         self.alpha = cfg.alpha
-        
         if sigma:
             self.sigma = nn.Parameter(torch.Tensor(1))
             self.sigma.data.fill_(1)
         else:
-            self.register_parameter('sigma', None)  # Optional parameter
-    
+            self.register_parameter('sigma', None)
+
     def init_global_clusters(self):
-        # Normalize local clusters and create global clusters (teacher's prototypes)
-        self.local_clusters_1.data = F.normalize(self.local_clusters_1, dim=1)
-        self.local_clusters_2.data = F.normalize(self.local_clusters_2, dim=1)
-        self.local_clusters_3.data = F.normalize(self.local_clusters_3, dim=1)
-        self.local_clusters_4.data = F.normalize(self.local_clusters_4, dim=1)
-        
-        # Teacher's global clusters: average of all four students' local clusters
-        self.global_clusters = torch.nn.Parameter(
-            (self.local_clusters_1.data + self.local_clusters_2.data + self.local_clusters_3.data + self.local_clusters_4.data) / 4
-        )
-        self.global_clusters.requires_grad = False  # Teacher's clusters do not update with gradients
-    
+        self.local_clusters.data = F.normalize(self.local_clusters, dim=1)
+        self.global_clusters = torch.nn.Parameter(self.local_clusters.data.clone())
+        self.global_clusters.requires_grad = False
+
     def update_global_clusters(self):
-        # Update teacher's global clusters based on the outputs of all four students
-        self.global_clusters.data = self.alpha * self.global_clusters.data + (1 - self.alpha) * (
-            (self.local_clusters_1.data + self.local_clusters_2.data + self.local_clusters_3.data + self.local_clusters_4.data) / 4
-        )
+        self.global_clusters.data = self.alpha * self.global_clusters.data + (1 - self.alpha) * self.local_clusters.data
 
     def reset_parameters(self):
         with torch.no_grad():
-            self.local_clusters_1 = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
-            self.local_clusters_2 = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
-            self.local_clusters_3 = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
-            self.local_clusters_4 = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
-    
-    def forward(self, x):
-        # Normalize features and clusters
-        normed_features = F.normalize(x, dim=1)
-        normed_local_clusters_1 = F.normalize(self.local_clusters_1, dim=1)
-        normed_local_clusters_2 = F.normalize(self.local_clusters_2, dim=1)
-        normed_local_clusters_3 = F.normalize(self.local_clusters_3, dim=1)
-        normed_local_clusters_4 = F.normalize(self.local_clusters_4, dim=1)
-        normed_global_clusters = F.normalize(self.global_clusters, dim=1)
+            self.local_clusters = nn.init.xavier_normal_(torch.nn.Parameter(torch.randn(self.n_classes, self.dim)))
 
-        # Calculate inner products for all four students
-        inner_products_local_1 = torch.einsum("bchw,nc->bnhw", normed_features.detach(), normed_local_clusters_1)
-        inner_products_local_2 = torch.einsum("bchw,nc->bnhw", normed_features.detach(), normed_local_clusters_2)
-        inner_products_local_3 = torch.einsum("bchw,nc->bnhw", normed_features.detach(), normed_local_clusters_3)
-        inner_products_local_4 = torch.einsum("bchw,nc->bnhw", normed_features.detach(), normed_local_clusters_4)
-        
+    def forward(self, x):
+        normed_local_clusters = F.normalize(self.local_clusters, dim=1)
+        normed_global_clusters = F.normalize(self.global_clusters, dim=1)
+        normed_features = F.normalize(x, dim=1)
+
+        inner_products_local = torch.einsum("bchw,nc->bnhw", normed_features.detach(), normed_local_clusters)
         inner_products_global = torch.einsum("bchw,nc->bnhw", normed_features, normed_global_clusters.detach())
 
-        # If sigma is provided, apply it to the local inner products
         if self.sigma is not None:
-            inner_products_local_1 = self.sigma * inner_products_local_1
-            inner_products_local_2 = self.sigma * inner_products_local_2
-            inner_products_local_3 = self.sigma * inner_products_local_3
-            inner_products_local_4 = self.sigma * inner_products_local_4
+            inner_products_local = self.sigma * inner_products_local
 
-        # Combine the outputs of all four students (e.g., average or weighted sum)
-        combined_inner_products_local = (inner_products_local_1 + inner_products_local_2 + inner_products_local_3 + inner_products_local_4) / 4
-        
-        return combined_inner_products_local, inner_products_global
-
+        return inner_products_local, inner_products_global
 
 class FeaturePyramidNet(nn.Module):
     def __init__(self, cut_model):
