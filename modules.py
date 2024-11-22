@@ -108,17 +108,23 @@ class Projection(nn.Module):
         self.proj_type = cfg.projection_type
         if self.proj_type == "nonlinear":
             self.cluster2 = self.make_nonlinear_clusterer(self.n_feats)
-
+            
     def make_clusterer(self, in_channels):
         return torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels, self.dim, (1, 1))
-        )
+            torch.nn.Conv2d(in_channels, self.dim, (1, 1)),
+            torch.nn.BatchNorm2d(self.dim),
+            torch.nn.Mish())
+        
 
     def make_nonlinear_clusterer(self, in_channels):
         return torch.nn.Sequential(
             torch.nn.Conv2d(in_channels, in_channels, (1, 1)),
-            torch.nn.SiLU(),
-            torch.nn.Conv2d(in_channels, self.dim, (1, 1)))
+            torch.nn.BatchNorm2d(in_channels),
+            torch.nn.Mish(),
+            torch.nn.Conv2d(in_channels, self.dim, (1, 1)),
+            torch.nn.BatchNorm2d(self.dim))
+
+
 
 
     def forward(self, feat):
